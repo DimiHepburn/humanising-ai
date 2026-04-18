@@ -1,30 +1,21 @@
-# ---------------------------------------------------------------------
-# Core — required by every module.
-# ---------------------------------------------------------------------
+# Core — required for the src/ package and every notebook
 numpy>=1.24.0
 matplotlib>=3.7.0
 
-# ---------------------------------------------------------------------
-# Notebook environment (used by notebooks/)
-# ---------------------------------------------------------------------
-jupyter>=1.0.0
-ipykernel>=6.0.0
-tqdm>=4.65.0
+# Test — required to run `pytest tests/`
+pytest>=7.0.0
 
-# ---------------------------------------------------------------------
-# Optional — unlock the transformer / LLM backends in
-#   src/affective/sentiment_pipeline.py  (TransformerBackend)
-#   src/dialogue/empathetic_responder.py (LLMGenerator — any SDK)
-# Uncomment the ones you actually need; the lexicon / template
-# defaults work without these.
-# ---------------------------------------------------------------------
-# torch>=2.0.0
+# Optional — enables the transformer backends in src/affective/
+#   (HuggingFace GoEmotions / RoBERTa pipeline)
 # transformers>=4.30.0
+# torch>=2.0.0
 
-# ---------------------------------------------------------------------
-# Optional — drop-in "real" alternatives to the shipped Kernel-SHAP
-# and linear-probing implementations.  Left commented so the default
-# install stays fast.
-# ---------------------------------------------------------------------
-# shap>=0.44.0
-# scikit-learn>=1.3.0
+# Optional — enables opening notebooks as Jupyter notebooks
+#   (they run as plain .py scripts without it)
+# jupytext>=1.15.0
+# jupyterlab>=4.0.0
+
+# Optional — LLM backends for src/dialogue/LLMGenerator
+#   (the dialogue package is backend-agnostic; plug in whichever you use)
+# openai>=1.0.0
+# anthropic>=0.25.0
