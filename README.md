@@ -20,7 +20,7 @@
 
 This is not just an engineering challenge. It sits at the intersection of psychology, neuroscience, ethics, linguistics, and machine learning.
 
-The repository pairs a lightweight reference **codebase** (`src/`, `notebooks/`) with three original **frameworks** (`frameworks/`) that describe what the code is *for*: how a human should engage with AI, how an AI should engage with a human, and how a third party can audit whether either actually happened.
+The repository pairs a lightweight reference **codebase** (`src/`, `notebooks/`) with four original **frameworks** (`frameworks/`) that describe what the code is *for*: how a human should engage with AI, how an AI should engage with a human, how a third party can audit whether either actually happened, and when the AI should step out of the interaction entirely.
 
 ---
 
@@ -40,17 +40,18 @@ Most modern AI systems — even the most capable large language models — fail 
 
 ---
 
-## 📐 The Three Frameworks
+## 📐 The Four Frameworks
 
-Three original frameworks sit in [`frameworks/`](./frameworks) and form a deliberate triad — one per agent in any humane interaction:
+Four original frameworks sit in [`frameworks/`](./frameworks) and form a deliberately complete set — three for how to interact well, and one for when not to interact at all:
 
 | Framework | Perspective | Mode | Asks |
 |-----------|-------------|------|------|
 | [Friction Protocol](./frameworks/friction_protocol.md) | Human → AI | Prescriptive | *How should I engage critically with AI output?* |
 | [Humanising Loop](./frameworks/humanising_loop.md) | AI → Human | Prescriptive | *How should the system engage carefully with the person in front of it?* |
 | [Attunement Audit](./frameworks/attunement_audit.md) | Third-party → Exchange | Evaluative | *Did this interaction, in fact, humanise anyone?* |
+| [Handoff Threshold](./frameworks/handoff_threshold.md) | AI → (Out of interaction) | Safety-critical | *When should the system step out of the conversation entirely?* |
 
-The [frameworks README](./frameworks/README.md) explains why three are needed and how to read them in order. The rest of the repository is an implementation of what those frameworks prescribe.
+The [frameworks README](./frameworks/README.md) explains why four are needed and how to read them in order. The rest of the repository is an implementation of what those frameworks prescribe.
 
 ---
 
@@ -118,6 +119,14 @@ Implemented in [`src/explainability/`](./src/explainability). Walkthrough: [`not
 
 ---
 
+### 5. Safety: The Handoff Threshold
+
+The four sub-packages above describe how to interact *well* with a user. They do not, on their own, describe when an AI system should stop trying to help and defer to a human. That is the job of the [Handoff Threshold](./frameworks/handoff_threshold.md): five criteria — risk, epistemic limit, attunement failure, emotional load, consent — evaluated per turn, encoded as a disjunction rather than a weighted sum.
+
+This repository deliberately does **not** ship a production-grade risk classifier. Any deployment using the Handoff Threshold is expected to supply one, audited separately. The framework document specifies what signals from the existing sub-packages feed each criterion.
+
+---
+
 ## 🧠 Theoretical Grounding
 
 This project draws on several interdisciplinary fields:
@@ -127,7 +136,7 @@ This project draws on several interdisciplinary fields:
 - **Phenomenology** (Husserl, Merleau-Ponty) — what subjective experience actually is and what it would mean for a machine to have it
 - **Philosophy of mind** — the hard problem of consciousness, functionalism vs. biological naturalism
 - **HCI research** — what actually makes humans trust and connect with AI systems
-- **Clinical & pedagogical theory** (Rogers, Stern, Schön, Vygotsky, Polanyi) — underpinning the three frameworks in [`frameworks/`](./frameworks)
+- **Clinical & pedagogical theory** (Rogers, Stern, Schön, Vygotsky, Polanyi, Gawande, Perrow) — underpinning the four frameworks in [`frameworks/`](./frameworks)
 
 ---
 
@@ -139,7 +148,8 @@ humanising-ai/
 │   ├── README.md
 │   ├── friction_protocol.md         # Human → AI
 │   ├── humanising_loop.md           # AI → Human
-│   └── attunement_audit.md          # Third-party → Exchange
+│   ├── attunement_audit.md          # Third-party → Exchange
+│   └── handoff_threshold.md         # AI → (Out of interaction)
 ├── notebooks/
 │   ├── README.md
 │   ├── 01_emotion_detection.py
@@ -186,7 +196,7 @@ humanising-ai/
 | Attune / Respond | Registerial Attunement / Generative Restraint | [`src/dialogue/`](./src/dialogue) | `03_dialogue_grounding.py` |
 | Account | Interrogable Accounting | [`src/explainability/`](./src/explainability) | `04_explainability.py` |
 
-The Friction Protocol deliberately sits *outside* this table: it is the framework the reader is invited to apply to everything else in the repository, including these frameworks themselves.
+The **Friction Protocol** sits *outside* this table on purpose — it is the framework the reader is invited to apply to everything else in the repository, including these frameworks themselves. The **Handoff Threshold** also sits outside, for a different reason: it composes signals from every sub-package, plus at least one (risk classification) the repository deliberately does not ship.
 
 ---
 
@@ -197,6 +207,8 @@ The Friction Protocol deliberately sits *outside* this table: it is the framewor
 - Lundberg, S.M. & Lee, S.-I. (2017). A Unified Approach to Interpreting Model Predictions
 - Miller, T. (2019). Explanation in Artificial Intelligence: Insights from the Social Sciences
 - Baron-Cohen, S., Leslie, A.M. & Frith, U. (1985). Does the autistic child have a "theory of mind"?
+- Gawande, A. (2009). *The Checklist Manifesto*
+- Perrow, C. (1984). *Normal Accidents: Living with High-Risk Technologies*
 - Damasio, A. (1994). *Descartes' Error: Emotion, Reason, and the Human Brain*
 - Panksepp, J. (1998). *Affective Neuroscience*
 - Rogers, C.R. (1957). The necessary and sufficient conditions of therapeutic personality change
