@@ -1,0 +1,56 @@
+cff-version: 1.2.0
+message: >-
+  If you use this repository or any of its four frameworks,
+  please cite it using the metadata below.
+title: "humanising-ai"
+abstract: >-
+  A research project and reference implementation for humanising
+  AI interaction. Pairs a lightweight NumPy-based codebase
+  (affective computing, theory of mind, empathetic dialogue,
+  explainability) with four original frameworks — the Friction
+  Protocol, the Humanising Loop, the Attunement Audit, and the
+  Handoff Threshold — covering how a human should engage with
+  AI, how an AI should engage with a human, how a third party
+  can audit whether either happened, and when the AI should
+  step out of the interaction entirely.
+type: software
+authors:
+  - family-names: Romanov
+    given-names: Dimitri
+    affiliation: >-
+      MSc Clinical Neuroscience, University of Roehampton
+repository-code: "https://github.com/DimiHepburn/humanising-ai"
+url: "https://github.com/DimiHepburn/humanising-ai"
+license: MIT
+keywords:
+  - humanising AI
+  - affective computing
+  - theory of mind
+  - empathetic dialogue
+  - explainability
+  - contrastive explanations
+  - AI safety
+  - handoff
+  - human-centred AI
+  - MSc clinical neuroscience
+date-released: 2026-04-18
+version: "0.1.0"
+
+preferred-citation:
+  type: generic
+  title: >-
+    Humanising AI: Four frameworks for user engagement, system
+    design, third-party audit, and safe handoff in human–AI
+    interaction
+  authors:
+    - family-names: Romanov
+      given-names: Dimitri
+      affiliation: >-
+        MSc Clinical Neuroscience, University of Roehampton
+  year: 2026
+  month: 4
+  institution:
+    name: University of Roehampton
+  notes: >-
+    Unpublished coursework, MSc Clinical Neuroscience.
+    Accompanying repository: https://github.com/DimiHepburn/humanising-ai
