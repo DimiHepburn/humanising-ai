@@ -60,14 +60,14 @@ The [frameworks README](./frameworks/README.md) explains why three are needed an
 
 Building AI systems that can accurately detect and respond to human emotional states:
 
-- **Text-based sentiment and emotion detection** using transformer models (BERT, RoBERTa fine-tuned on GoEmotions, EmoBank)
-- **Contextual emotion modelling** — tracking emotional arcs across conversation turns, not just single utterances
-- **Multimodal hooks** — clean interfaces for adding tone or facial-expression signals when available
+- **Lexicon-based classifier** that runs on any laptop with no ML dependencies, plus a clean `EmotionBackend` interface that drops in a HuggingFace transformer (e.g. GoEmotions fine-tuned RoBERTa) with a single argument
+- **Contextual emotion modelling** — tracking emotional arcs across conversation turns, not just single utterances, with exponential smoothing for emotional *momentum*
+- **Multimodal fusion** — a lightweight `MultimodalEmotionFuser` that combines text + tone + any custom modality and gracefully handles missing channels
 
 Implemented in [`src/affective/`](./src/affective). Walkthrough: [`notebooks/01_emotion_detection.py`](./notebooks/01_emotion_detection.py).
 
 ```python
-from src.affective.emotion_tracker import EmotionalContextTracker
+from src.affective import EmotionalContextTracker
 
 tracker = EmotionalContextTracker(decay=0.7)
 snap = tracker.update("I've been really overwhelmed with work this week.")
@@ -141,23 +141,35 @@ humanising-ai/
 │   ├── humanising_loop.md           # AI → Human
 │   └── attunement_audit.md          # Third-party → Exchange
 ├── notebooks/
+│   ├── README.md
 │   ├── 01_emotion_detection.py
 │   ├── 02_theory_of_mind_evals.py
 │   ├── 03_dialogue_grounding.py
 │   └── 04_explainability.py
 ├── src/
+│   ├── README.md
 │   ├── affective/
-│   │   └── emotion_tracker.py
+│   │   ├── __init__.py
+│   │   ├── emotion_tracker.py       # EmotionalContextTracker
+│   │   ├── sentiment_pipeline.py    # EmotionClassifier, Lexicon/Transformer backends
+│   │   └── multimodal_fusion.py     # MultimodalEmotionFuser
 │   ├── theory_of_mind/
-│   │   ├── tom_benchmark.py
-│   │   └── belief_state_probing.py
+│   │   ├── __init__.py
+│   │   ├── tom_benchmark.py         # Sally-Anne generator, ToMBenchmark
+│   │   └── belief_state_probing.py  # BeliefStateProbe
 │   ├── dialogue/
-│   │   ├── context_manager.py
-│   │   └── empathetic_responder.py
+│   │   ├── __init__.py
+│   │   ├── context_manager.py       # ConversationContext, ConversationTurn
+│   │   └── empathetic_responder.py  # EmpatheticResponder, Template/LLM generators
 │   └── explainability/
-│       ├── shap_explainer.py
-│       └── contrastive_explanations.py
+│       ├── __init__.py
+│       ├── shap_explainer.py        # Kernel SHAP (pure NumPy)
+│       └── contrastive_explanations.py  # "Why X and not Y?"
 ├── tests/
+│   ├── README.md
+│   ├── test_smoke.py                # end-to-end exercises per sub-package
+│   ├── test_invariants.py           # bounds, efficiency axiom, negative controls
+│   └── test_pipeline.py             # Humanising Loop integration
 ├── LICENSE
 ├── requirements.txt
 └── README.md
@@ -200,6 +212,9 @@ pip install -r requirements.txt
 
 # Open any notebook as a Jupytext-paired .py file, or run directly:
 python notebooks/01_emotion_detection.py
+
+# Run the test suite
+pytest tests/
 ```
 
 All notebooks run with CPU-only defaults and no network calls. The LLM hooks (OpenAI / Anthropic / local) are illustrated inline in each notebook but never required.
