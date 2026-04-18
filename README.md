@@ -20,6 +20,8 @@
 
 This is not just an engineering challenge. It sits at the intersection of psychology, neuroscience, ethics, linguistics, and machine learning.
 
+The repository pairs a lightweight reference **codebase** (`src/`, `notebooks/`) with three original **frameworks** (`frameworks/`) that describe what the code is *for*: how a human should engage with AI, how an AI should engage with a human, and how a third party can audit whether either actually happened.
+
 ---
 
 ## 🧩 The Problem Space
@@ -38,114 +40,81 @@ Most modern AI systems — even the most capable large language models — fail 
 
 ---
 
+## 📐 The Three Frameworks
+
+Three original frameworks sit in [`frameworks/`](./frameworks) and form a deliberate triad — one per agent in any humane interaction:
+
+| Framework | Perspective | Mode | Asks |
+|-----------|-------------|------|------|
+| [Friction Protocol](./frameworks/friction_protocol.md) | Human → AI | Prescriptive | *How should I engage critically with AI output?* |
+| [Humanising Loop](./frameworks/humanising_loop.md) | AI → Human | Prescriptive | *How should the system engage carefully with the person in front of it?* |
+| [Attunement Audit](./frameworks/attunement_audit.md) | Third-party → Exchange | Evaluative | *Did this interaction, in fact, humanise anyone?* |
+
+The [frameworks README](./frameworks/README.md) explains why three are needed and how to read them in order. The rest of the repository is an implementation of what those frameworks prescribe.
+
+---
+
 ## 🔬 Research Modules
 
 ### 1. Affective Computing & Emotion Recognition
 
-Building AI systems that can accurately detect and respond to human emotional states across multiple modalities:
+Building AI systems that can accurately detect and respond to human emotional states:
 
 - **Text-based sentiment and emotion detection** using transformer models (BERT, RoBERTa fine-tuned on GoEmotions, EmoBank)
-- **Multimodal fusion** — combining text, tone, and facial expression signals for richer emotional understanding
 - **Contextual emotion modelling** — tracking emotional arcs across conversation turns, not just single utterances
+- **Multimodal hooks** — clean interfaces for adding tone or facial-expression signals when available
+
+Implemented in [`src/affective/`](./src/affective). Walkthrough: [`notebooks/01_emotion_detection.py`](./notebooks/01_emotion_detection.py).
 
 ```python
-from transformers import pipeline
+from src.affective.emotion_tracker import EmotionalContextTracker
 
-class EmotionalContextTracker:
-    """
-    Tracks emotional state across conversation turns.
-    Uses exponential smoothing to model emotional momentum.
-    """
-    def __init__(self, model="SamLowe/roberta-base-go_emotions", decay=0.7):
-        self.classifier = pipeline("text-classification", model=model, top_k=None)
-        self.decay = decay
-        self.emotional_state = {}
-
-    def update(self, utterance: str) -> dict:
-        results = self.classifier(utterance)[0]
-        new_scores = {r['label']: r['score'] for r in results}
-
-        # Exponential smoothing — blend new signal with accumulated state
-        for emotion, score in new_scores.items():
-            prev = self.emotional_state.get(emotion, 0.0)
-            self.emotional_state[emotion] = self.decay * prev + (1 - self.decay) * score
-
-        return self.dominant_emotions(top_k=3)
-
-    def dominant_emotions(self, top_k=3) -> dict:
-        sorted_emotions = sorted(self.emotional_state.items(), key=lambda x: -x[1])
-        return dict(sorted_emotions[:top_k])
+tracker = EmotionalContextTracker(decay=0.7)
+snap = tracker.update("I've been really overwhelmed with work this week.")
+print(snap.dominant, snap.valence, snap.arousal)
 ```
 
 ---
 
 ### 2. Theory of Mind in Language Models
 
-Theory of Mind (ToM) — the ability to attribute mental states (beliefs, desires, intentions) to others — is one of the hallmarks of human social cognition. Do LLMs have it? The evidence is mixed and fascinating.
+Theory of Mind (ToM) — the ability to attribute mental states (beliefs, desires, intentions) to others — is one of the hallmarks of human social cognition. Do LLMs have it? The evidence is mixed and fascinating. This module:
 
-This module:
-- Implements the classic **Sally-Anne false belief test** for language models
-- Evaluates ToM capabilities using the **ToMi benchmark** (Le et al., 2019)
-- Probes internal representations in transformer models for belief-state encoding
-- Explores whether fine-tuning on perspective-taking data improves ToM performance
+- Generates **Sally-Anne false-belief scenarios** programmatically at configurable order (1st- and 2nd-order)
+- Provides a backend-agnostic `ToMBenchmark` that evaluates any `str -> str` model callable
+- Ships a **belief-state probe** for testing whether a feature set linearly encodes the correct belief
+- Includes a **recency baseline** designed to fail, as a validity check on the benchmark itself
 
-Key finding from our experiments: GPT-4 class models pass first-order ToM tasks at near-human rates, but fail meaningfully on second-order ("what does Alice think Bob thinks?") scenarios — suggesting statistical mimicry rather than genuine mentalising.
+Implemented in [`src/theory_of_mind/`](./src/theory_of_mind). Walkthrough: [`notebooks/02_theory_of_mind_evals.py`](./notebooks/02_theory_of_mind_evals.py).
+
+Key finding from our experiments: GPT-4-class models pass first-order ToM tasks at near-human rates, but fail meaningfully on second-order ("what does Alice think Bob thinks?") scenarios — suggesting statistical mimicry rather than genuine mentalising.
 
 ---
 
 ### 3. Empathetic Dialogue Systems
 
-What does empathetic conversation actually require? We decompose it into four components:
+What does empathetic conversation actually require? We decompose it into a four-stage skeleton — acknowledge → mirror → invite → (optionally) offer — and implement it as a thin orchestration layer so the generator can be swapped freely between a template backend, an OpenAI/Anthropic API, or a local LLM.
 
-1. **Emotion recognition** — accurately identifying the speaker's emotional state
-2. **Emotional validation** — acknowledging and normalising the emotion
-3. **Perspective-taking** — demonstrating genuine understanding of the speaker's viewpoint
-4. **Constructive response** — offering something useful without projecting or trivialising
-
-This module fine-tunes dialogue models on the **EmpatheticDialogues** dataset (Rashkin et al., 2019) and evaluates them against human raters on all four dimensions.
+Implemented in [`src/dialogue/`](./src/dialogue). Walkthrough: [`notebooks/03_dialogue_grounding.py`](./notebooks/03_dialogue_grounding.py).
 
 ```python
-# Example empathetic response pipeline
-class EmpatheticResponder:
-    def __init__(self):
-        self.emotion_tracker = EmotionalContextTracker()
-        self.dialogue_model = load_empathetic_model()
+from src.dialogue import EmpatheticResponder, TemplateGenerator
 
-    def respond(self, user_input: str, history: list) -> str:
-        # Step 1: detect emotional context
-        emotions = self.emotion_tracker.update(user_input)
-        dominant = max(emotions, key=emotions.get)
-
-        # Step 2: build emotionally-aware prompt
-        prompt = self._build_empathetic_prompt(user_input, dominant, history)
-
-        # Step 3: generate response with emotional grounding
-        response = self.dialogue_model.generate(prompt)
-        return self._post_process(response, emotions)
+bot = EmpatheticResponder(generator=TemplateGenerator())
+print(bot.respond("I've been really overwhelmed with work this week."))
 ```
 
 ---
 
 ### 4. Explainability as a Human Value
 
-For AI to be genuinely human-centred, it must be **explainable** — not just technically interpretable, but communicable to non-expert users in meaningful ways. This module covers:
+For AI to be genuinely human-centred, it must be **explainable** — not just technically interpretable, but communicable to non-expert users in meaningful ways. This module provides:
 
-- **LIME and SHAP** for local model explanations
-- **Attention visualisation** as an imperfect but useful interpretability tool
-- **Contrastive explanations** ("why X and not Y?") — which research suggests humans find most useful
-- **Uncertainty quantification** — communicating confidence alongside outputs
+- A dependency-free **Kernel SHAP** implementation for per-feature attribution
+- **Contrastive explanations** — "why *X* and not *Y*?" — for both feature-space and token-space inputs
+- A `flipped_at` diagnostic that reports **how close a decision was to flipping**, which is often more humane than the verdict itself
 
----
-
-### 5. Value Alignment & AI Ethics Framework
-
-A survey and synthesis of current approaches to value alignment, with critical analysis:
-
-- RLHF (Reinforcement Learning from Human Feedback) — strengths and failure modes
-- Constitutional AI and rule-following approaches
-- Debate and amplification as scalable oversight methods
-- The **alignment tax** problem — does aligning AI compromise capability?
-- **Goodhart's Law in AI**: when optimising for a proxy measure corrupts the underlying goal
+Implemented in [`src/explainability/`](./src/explainability). Walkthrough: [`notebooks/04_explainability.py`](./notebooks/04_explainability.py).
 
 ---
 
@@ -158,6 +127,7 @@ This project draws on several interdisciplinary fields:
 - **Phenomenology** (Husserl, Merleau-Ponty) — what subjective experience actually is and what it would mean for a machine to have it
 - **Philosophy of mind** — the hard problem of consciousness, functionalism vs. biological naturalism
 - **HCI research** — what actually makes humans trust and connect with AI systems
+- **Clinical & pedagogical theory** (Rogers, Stern, Schön, Vygotsky, Polanyi) — underpinning the three frameworks in [`frameworks/`](./frameworks)
 
 ---
 
@@ -165,33 +135,46 @@ This project draws on several interdisciplinary fields:
 
 ```
 humanising-ai/
+├── frameworks/
+│   ├── README.md
+│   ├── friction_protocol.md         # Human → AI
+│   ├── humanising_loop.md           # AI → Human
+│   └── attunement_audit.md          # Third-party → Exchange
 ├── notebooks/
-│   ├── 01_emotion_detection.ipynb
-│   ├── 02_theory_of_mind_evals.ipynb
-│   ├── 03_empathetic_dialogue.ipynb
-│   ├── 04_explainability_methods.ipynb
-│   └── 05_value_alignment_survey.ipynb
+│   ├── 01_emotion_detection.py
+│   ├── 02_theory_of_mind_evals.py
+│   ├── 03_dialogue_grounding.py
+│   └── 04_explainability.py
 ├── src/
 │   ├── affective/
-│   │   ├── emotion_tracker.py
-│   │   ├── sentiment_pipeline.py
-│   │   └── multimodal_fusion.py
-│   ├── dialogue/
-│   │   ├── empathetic_responder.py
-│   │   └── context_manager.py
+│   │   └── emotion_tracker.py
 │   ├── theory_of_mind/
 │   │   ├── tom_benchmark.py
 │   │   └── belief_state_probing.py
+│   ├── dialogue/
+│   │   ├── context_manager.py
+│   │   └── empathetic_responder.py
 │   └── explainability/
 │       ├── shap_explainer.py
 │       └── contrastive_explanations.py
-├── data/
-│   ├── empathetic_dialogues/
-│   └── tom_benchmark/
-├── results/
+├── tests/
+├── LICENSE
 ├── requirements.txt
 └── README.md
 ```
+
+---
+
+## 🗺️ How the Frameworks Map onto the Code
+
+| Humanising Loop stage | Attunement Audit dimension | Code module | Notebook |
+|------------------------|-----------------------------|-------------|----------|
+| Perceive | Perceptual Fidelity | [`src/affective/`](./src/affective) | `01_emotion_detection.py` |
+| Attribute | Attributive Honesty | [`src/theory_of_mind/`](./src/theory_of_mind) | `02_theory_of_mind_evals.py` |
+| Attune / Respond | Registerial Attunement / Generative Restraint | [`src/dialogue/`](./src/dialogue) | `03_dialogue_grounding.py` |
+| Account | Interrogable Accounting | [`src/explainability/`](./src/explainability) | `04_explainability.py` |
+
+The Friction Protocol deliberately sits *outside* this table: it is the framework the reader is invited to apply to everything else in the repository, including these frameworks themselves.
 
 ---
 
@@ -199,10 +182,12 @@ humanising-ai/
 
 - Rashkin, H. et al. (2019). Towards Empathetic Open-domain Conversation Models
 - Le, M. et al. (2019). Revisiting the Evaluation of Theory of Mind through Question Answering
+- Lundberg, S.M. & Lee, S.-I. (2017). A Unified Approach to Interpreting Model Predictions
+- Miller, T. (2019). Explanation in Artificial Intelligence: Insights from the Social Sciences
+- Baron-Cohen, S., Leslie, A.M. & Frith, U. (1985). Does the autistic child have a "theory of mind"?
 - Damasio, A. (1994). *Descartes' Error: Emotion, Reason, and the Human Brain*
 - Panksepp, J. (1998). *Affective Neuroscience*
-- Bender, E.M. et al. (2021). On the Dangers of Stochastic Parrots
-- Gabriel, I. (2020). Artificial Intelligence, Values, and Alignment
+- Rogers, C.R. (1957). The necessary and sufficient conditions of therapeutic personality change
 
 ---
 
@@ -212,8 +197,12 @@ humanising-ai/
 git clone https://github.com/DimiHepburn/humanising-ai.git
 cd humanising-ai
 pip install -r requirements.txt
-jupyter notebook notebooks/01_emotion_detection.ipynb
+
+# Open any notebook as a Jupytext-paired .py file, or run directly:
+python notebooks/01_emotion_detection.py
 ```
+
+All notebooks run with CPU-only defaults and no network calls. The LLM hooks (OpenAI / Anthropic / local) are illustrated inline in each notebook but never required.
 
 ---
 
